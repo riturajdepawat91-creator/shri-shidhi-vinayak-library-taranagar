@@ -62,15 +62,40 @@ if(canvas){
     let mouse = {
         x: null,
         y: null,
-        radius: 150
+        radius: 180
     };
 
     const particles = [];
+
+    /* Desktop */
 
     window.addEventListener("mousemove", (e) => {
 
         mouse.x = e.clientX;
         mouse.y = e.clientY;
+
+    });
+
+    /* Mobile */
+
+    window.addEventListener("touchstart", (e) => {
+
+        mouse.x = e.touches[0].clientX;
+        mouse.y = e.touches[0].clientY;
+
+    }, { passive:true });
+
+    window.addEventListener("touchmove", (e) => {
+
+        mouse.x = e.touches[0].clientX;
+        mouse.y = e.touches[0].clientY;
+
+    }, { passive:true });
+
+    window.addEventListener("touchend", () => {
+
+        mouse.x = null;
+        mouse.y = null;
 
     });
 
@@ -85,6 +110,7 @@ if(canvas){
 
             this.vx = (Math.random() - 0.5) * 1;
             this.vy = (Math.random() - 0.5) * 1;
+
             this.hue = Math.random() * 360;
         }
 
@@ -92,181 +118,209 @@ if(canvas){
 
             this.x += this.vx;
             this.y += this.vy;
+
             this.hue += 0.15;
 
             if(this.hue > 360){
-    this.hue = 0;
+                this.hue = 0;
+            }
+if(this.x < 0 || this.x > canvas.width){
+    this.vx *= -1;
 }
 
-            if(this.x < 0 || this.x > canvas.width){
-                this.vx *= -1;
+if(this.y < 0 || this.y > canvas.height){
+    this.vy *= -1;
+}
+
+if(mouse.x !== null && mouse.y !== null){
+
+    const dx = mouse.x - this.x;
+    const dy = mouse.y - this.y;
+
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if(distance < mouse.radius){
+
+        this.x -= dx * 0.01;
+        this.y -= dy * 0.01;
+
+    }
+
+}
+}
+
+draw(){
+
+    ctx.beginPath();
+
+    ctx.arc(
+        this.x,
+        this.y,
+        this.size,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle =
+    `hsl(${this.hue},100%,60%)`;
+
+    ctx.fill();
+}
+}
+
+for(
+    let i = 0;
+    i < (
+        window.innerWidth < 768
+        ? 80
+        : 140
+    );
+    i++
+){
+
+    particles.push(
+        new Particle()
+    );
+
+}
+
+function connectParticles(){
+
+    for(let a = 0; a < particles.length; a++){
+
+        for(let b = a + 1; b < particles.length; b++){
+
+            const dx =
+            particles[a].x -
+            particles[b].x;
+
+            const dy =
+            particles[a].y -
+            particles[b].y;
+
+            const distance =
+            dx * dx + dy * dy;
+
+            if(distance < 10000){
+
+                ctx.beginPath();
+
+                ctx.strokeStyle =
+                `hsla(${particles[a].hue},
+                100%,60%,0.08)`;
+
+                ctx.lineWidth = 1;
+
+                ctx.moveTo(
+                    particles[a].x,
+                    particles[a].y
+                );
+
+                ctx.lineTo(
+                    particles[b].x,
+                    particles[b].y
+                );
+
+                ctx.stroke();
+
             }
 
-            if(this.y < 0 || this.y > canvas.height){
-                this.vy *= -1;
-            }
-
-            if(mouse.x !== null && mouse.y !== null){
-
-                const dx = mouse.x - this.x;
-                const dy = mouse.y - this.y;
-
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if(distance < mouse.radius){
-
-                    this.x -= dx * 0.01;
-                    this.y -= dy * 0.01;
-                }
-            }
         }
 
-        draw(){
-
-            ctx.beginPath();
-
-            ctx.arc(
-                this.x,
-                this.y,
-                this.size,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fillStyle =
-`hsl(${this.hue},100%,60%)`;
-            ctx.fill();
-        }
     }
 
-    for(let i = 0; i < 140; i++){
+}
 
-        particles.push(new Particle());
+function animate(){
 
-    }
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
 
-    function connectParticles(){
+    particles.forEach((particle) => {
 
-        for(let a = 0; a < particles.length; a++){
-
-            for(let b = a + 1; b < particles.length; b++){
-
-                const dx = particles[a].x - particles[b].x;
-                const dy = particles[a].y - particles[b].y;
-
-                const distance = dx * dx + dy * dy;
-
-                if(distance < 10000){
-
-                    ctx.beginPath();
-
-                    ctx.strokeStyle =
-`hsla(${particles[a].hue},
-100%,60%,0.08)`;
-                    ctx.lineWidth = 1;
-
-                    ctx.moveTo(
-                        particles[a].x,
-                        particles[a].y
-                    );
-
-                    ctx.lineTo(
-                        particles[b].x,
-                        particles[b].y
-                    );
-
-                    ctx.stroke();
-                }
-            }
-        }
-    }
-
-    function animate(){
-
-        ctx.clearRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-        particles.forEach((particle) => {
-
-            particle.update();
-            particle.draw();
-
-        });
-
-        connectParticles();
-
-        requestAnimationFrame(animate);
-    }
-
-    animate();
-
-    window.addEventListener("resize", () => {
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        particle.update();
+        particle.draw();
 
     });
 
+       connectParticles();
+
+requestAnimationFrame(animate);
+
 }
+
+animate();
+
+window.addEventListener("resize", () => {
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+});
+
+}
+
 /* =========================
    CUSTOM CURSOR
 ========================= */
 
-const cursor = document.querySelector(".cursor");
+const cursor =
+document.querySelector(".cursor");
 
-document.addEventListener("mousemove",(e)=>{
+/* Desktop Only */
 
-    cursor.style.left = e.clientX + "px";
-    cursor.style.top = e.clientY + "px";
+if(cursor){
 
-});
+    document.addEventListener("mousemove",(e)=>{
 
-const hoverElements = document.querySelectorAll(
-    "a, button, .btn-primary, .btn-secondary"
-);
+        cursor.style.left =
+        e.clientX + "px";
 
-hoverElements.forEach((element)=>{
-
-    element.addEventListener("mouseenter",()=>{
-
-        cursor.style.width = "50px";
-        cursor.style.height = "50px";
+        cursor.style.top =
+        e.clientY + "px";
 
     });
 
-    element.addEventListener("mouseleave",()=>{
+    const hoverElements =
+    document.querySelectorAll(
+        "a, button, .btn-primary, .btn-secondary"
+    );
 
-        cursor.style.width = "25px";
-        cursor.style.height = "25px";
+    hoverElements.forEach((element)=>{
+
+        element.addEventListener("mouseenter",()=>{
+
+            cursor.style.width = "50px";
+            cursor.style.height = "50px";
+
+        });
+
+        element.addEventListener("mouseleave",()=>{
+
+            cursor.style.width = "25px";
+            cursor.style.height = "25px";
+
+        });
 
     });
 
-});
-/* =========================
-   MOUSE LIGHT EFFECT
-========================= */
+}
 
-// const mouseLight = document.querySelector(".mouse-light");
-
-// document.addEventListener("mousemove",(e)=>{
-
-//     mouseLight.style.left = e.clientX + "px";
-//     mouseLight.style.top = e.clientY + "px";
-
-// });
 /* =========================
    TYPEWRITER EFFECT
 ========================= */
 
 const texts = [
+
     "Focused Environment",
     "24/7 Study Atmosphere",
     "Competitive Exam Preparation",
     "Your Path To Success"
+
 ];
 
 let textIndex = 0;
@@ -293,6 +347,7 @@ function typeEffect(){
         setTimeout(eraseEffect,1500);
 
     }
+
 }
 
 function eraseEffect(){
@@ -322,7 +377,12 @@ function eraseEffect(){
 }
 
 typeEffect();
- const reveals =
+
+/* =========================
+   SCROLL REVEAL
+========================= */
+
+const reveals =
 document.querySelectorAll(".reveal");
 
 window.addEventListener("scroll",()=>{
@@ -344,6 +404,7 @@ window.addEventListener("scroll",()=>{
     });
 
 });
+
 /* =========================
    STATS COUNTER
 ========================= */
@@ -379,20 +440,24 @@ function animateValue(id, start, end, duration){
             requestAnimationFrame(update);
 
         }
+
     }
 
     requestAnimationFrame(update);
+
 }
 
 let statsAnimated = false;
 
 window.addEventListener("scroll", () => {
 
-    const statsSection = document.querySelector(".stats");
+    const statsSection =
+    document.querySelector(".stats");
 
     if(!statsSection || statsAnimated) return;
 
-    const top = statsSection.getBoundingClientRect().top;
+    const top =
+    statsSection.getBoundingClientRect().top;
 
     if(top < window.innerHeight - 100){
 
@@ -402,14 +467,24 @@ window.addEventListener("scroll", () => {
         animateValue("success",0,100,2000);
 
         statsAnimated = true;
+
     }
 
 });
-document.querySelector(".whatsapp-btn")
-.style.opacity = "1";
 
-document.querySelector(".whatsapp-btn")
-.style.visibility = "visible";
+/* =========================
+   WHATSAPP BUTTON
+========================= */
+
+const whatsappBtn =
+document.querySelector(".whatsapp-btn");
+
+if(whatsappBtn){
+
+    whatsappBtn.style.opacity = "1";
+    whatsappBtn.style.visibility = "visible";
+
+}
 /* =========================
    SCROLL PROGRESS
 ========================= */
@@ -530,6 +605,11 @@ document
     });
 
 });
+
+/* =========================
+   MOUSE LIGHT EFFECT
+========================= */
+
 const mouseLight = document.querySelector(".mouse-light");
 
 if(mouseLight){
@@ -557,16 +637,33 @@ if(mouseLight){
         (colorIndex + 1) % colors.length;
 
     },2000);
-}   
-document.addEventListener("mousemove", (e)=>{
 
-    mouseLight.style.left =
-    e.clientX + "px";
+    document.addEventListener("mousemove", (e)=>{
 
-    mouseLight.style.top =
-    e.clientY + "px";
+        mouseLight.style.left =
+        e.clientX + "px";
 
-});
+        mouseLight.style.top =
+        e.clientY + "px";
+
+    });
+
+    document.addEventListener("touchmove", (e)=>{
+
+        mouseLight.style.left =
+        e.touches[0].clientX + "px";
+
+        mouseLight.style.top =
+        e.touches[0].clientY + "px";
+
+    },{passive:true});
+
+}
+
+/* =========================
+   FLOATING CARDS RANDOM
+========================= */
+
 document
 .querySelectorAll(".floating-card")
 .forEach(card => {
